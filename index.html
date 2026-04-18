@@ -1,961 +1,117 @@
-ช่วยแก้ปัญหา การแสดงผลจากระบบสะแกนบาร์โค๊ดนี้ จาก ข้อมูลบาร์โค๊ดคือ *123654* ผลที่สะแกนแสดงผิดพลาดเป็น  O1SE23QJ6NI54 OB ชั่วยตัดตัวอักษรออกและแสดงตัวเลข 123654 
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Barcode Scanner</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 100%;
-            padding: 10px;
-        }
-
-        .header {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .header h1 {
-            color: #667eea;
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        .status-ready {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-scanning {
-            background: #fff3cd;
-            color: #856404;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        .camera-container {
-            position: relative;
-            background: black;
-            border-radius: 15px;
-            overflow: hidden;
-            margin-bottom: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        }
-
-        #video {
-            width: 100%;
-            display: block;
-        }
-
-        .scan-line {
-            position: absolute;
-            left: 10%;
-            right: 10%;
-            top: 50%;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #ff0000, transparent);
-            box-shadow: 0 0 10px #ff0000;
-            animation: scan 2s ease-in-out infinite;
-        }
-
-        @keyframes scan {
-            0%, 100% { transform: translateY(-20px); opacity: 0.5; }
-            50% { transform: translateY(20px); opacity: 1; }
-        }
-
-        .scan-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-        }
-
-        .scan-frame {
-            width: 80%;
-            height: 120px;
-            border: 3px solid rgba(255, 255, 255, 0.5);
-            border-radius: 10px;
-            position: relative;
-        }
-
-        .scan-frame::before,
-        .scan-frame::after {
-            content: '';
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border: 3px solid #00ff00;
-        }
-
-        .scan-frame::before {
-            top: -3px;
-            left: -3px;
-            border-right: none;
-            border-bottom: none;
-        }
-
-        .scan-frame::after {
-            bottom: -3px;
-            right: -3px;
-            border-left: none;
-            border-top: none;
-        }
-
-        .result-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .result-label {
-            color: #667eea;
-            font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .result-value {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            font-size: 24px;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-            text-align: center;
-            min-height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            word-break: break-all;
-            position: relative;
-        }
-
-        .cursor-blink {
-            display: inline-block;
-            width: 3px;
-            height: 30px;
-            background: white;
-            margin-left: 5px;
-            animation: blink 1s step-end infinite;
-        }
-
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-
-        .empty-result {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 16px;
-            font-weight: normal;
-        }
-
-        .debug-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .debug-container h3 {
-            color: #667eea;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-
-        .debug-info {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 11px;
-            color: #333;
-            max-height: 200px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-
-        .history-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .history-header h3 {
-            color: #667eea;
-            font-size: 16px;
-        }
-
-        .btn {
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            margin: 5px;
-        }
-
-        .clear-btn {
-            background: #ff6b6b;
-        }
-
-        .torch-btn {
-            background: #f39c12;
-        }
-
-        .torch-on {
-            background: #27ae60;
-        }
-
-        .debug-btn {
-            background: #667eea;
-        }
-
-        .history-item {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 4px solid #667eea;
-        }
-
-        .history-data {
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 5px;
-            word-break: break-all;
-        }
-
-        .history-time {
-            font-size: 11px;
-            color: #999;
-        }
-
-        .empty-history {
-            text-align: center;
-            color: #999;
-            padding: 30px;
-            font-size: 14px;
-        }
-
-        .success-indicator {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            background: rgba(76, 175, 80, 0.95);
-            color: white;
-            padding: 30px 40px;
-            border-radius: 20px;
-            font-size: 20px;
-            font-weight: bold;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            z-index: 1000;
-        }
-
-        .success-show {
-            animation: successPop 0.8s ease-out;
-        }
-
-        @keyframes successPop {
-            0% { transform: translate(-50%, -50%) scale(0); }
-            50% { transform: translate(-50%, -50%) scale(1.1); }
-            80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-        }
-
-        canvas {
-            display: none;
-        }
-
-        #debugCanvas {
-            width: 100%;
-            max-width: 400px;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-
-        .show-canvas #debugCanvas {
-            display: block;
-        }
-
-        .confidence-bar {
-            margin-top: 10px;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff6b6b, #f39c12, #27ae60);
-            transition: width 0.3s;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>อนุมัติเอกสาร-Online</title>
+<style>
+  body, html {
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    background: #f0f0f0;
+    font-family: sans-serif;
+    overflow: hidden;
+  }
+  #loader {
+    position: fixed;
+    inset: 0; /* shorthand top:0; left:0; right:0; bottom:0 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    z-index: 999;
+    transition: opacity 1s ease;
+    opacity: 1;
+  }
+  #loader.fadeout {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .bar-loader {
+    width: 120px;
+    max-width: 60%;
+    height: 14px;
+    background: #ececec;
+    border-radius: 7px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-inner {
+    width: 40px;
+    height: 100%;
+    background: #4285f4;
+    border-radius: 7px;
+    position: absolute;
+    left: -40px;
+    animation: barmove 1.5s infinite linear;
+  }
+  @keyframes barmove {
+    0% { left: -40px;}
+    100% { left: 120px;}
+  }
+  #content-iframe {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    opacity: 0;
+    transition: opacity 0.8s cubic-bezier(.4,0,.2,1);
+    z-index: 1;
+  }
+  #content-iframe.visible {
+    opacity: 1;
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📱 Barcode Scanner</h1>
-            <p>Code 39 - Multi-Threshold + Validation</p>
-            <div id="status" class="status-badge status-ready">พร้อมสแกน</div>
-            <div>
-                <button class="btn debug-btn" onclick="toggleDebug()">🔍 Debug</button>
-                <button id="torchBtn" class="btn torch-btn" onclick="toggleTorch()" style="display:none;">💡 ไฟฉาย</button>
-            </div>
-        </div>
+<div id="loader">
+  <div class="bar-loader">
+    <div class="bar-inner"></div>
+  </div>
+</div>
+<iframe id="content-iframe"
+        src="https://script.google.com/macros/s/AKfycbwu3FSaDGq7jtK-XOKODHMt9fKwYcf7nN9yEaroph0Do9cfzpC6TJkbqX_lEooX1xZz/exec">
+</iframe>
+<script>
+const loader = document.getElementById('loader');
+  const iframe = document.getElementById('content-iframe');
 
-        <div class="camera-container">
-            <video id="video" autoplay playsinline></video>
-            <div class="scan-overlay">
-                <div class="scan-frame"></div>
-            </div>
-            <div class="scan-line"></div>
-        </div>
+  setTimeout(() => {
+    loader.classList.add('fadeout');
+    setTimeout(() => {
+      loader.style.display = 'none';
+      iframe.classList.add('visible');
+    }, 1000);
+  }, 1500);
 
-        <div class="result-container">
-            <div class="result-label">
-                <span>✅</span>
-                ข้อมูลที่สแกนได้:
-            </div>
-            <div id="result" class="result-value">
-                <span class="empty-result">รอการสแกน...</span>
-            </div>
-            <div class="confidence-bar">
-                <div id="confidenceFill" class="confidence-fill" style="width: 0%"></div>
-            </div>
-        </div>
+  // ==============================
+  // 🔒 ป้องกันปุ่มย้อนกลับ (Mobile Back)
+  // ==============================
 
-        <div id="debugContainer" class="debug-container" style="display: none;">
-            <h3>🔍 Debug Information</h3>
-            <div id="debugInfo" class="debug-info">รอข้อมูล...</div>
-            <canvas id="debugCanvas" width="640" height="100"></canvas>
-        </div>
+  // push state ครั้งแรก
+  history.pushState(null, null, location.href);
 
-        <div class="history-container">
-            <div class="history-header">
-                <h3>📋 ประวัติการสแกน</h3>
-                <button class="btn clear-btn" onclick="clearHistory()">ล้าง</button>
-            </div>
-            <div id="history"></div>
-        </div>
-    </div>
+  window.addEventListener('popstate', function (event) {
+    const confirmExit = confirm('ต้องการออกจากหน้านี้หรือไม่ ?');
 
-    <canvas id="canvas"></canvas>
+    if (confirmExit) {
+      // อนุญาตให้ย้อนกลับจริง
+      history.back();
+    } else {
+      // กันไม่ให้ย้อนกลับ
+      history.pushState(null, null, location.href);
+    }
+  });
 
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const debugCanvas = document.getElementById('debugCanvas');
-        const debugCtx = debugCanvas.getContext('2d');
-        const resultDiv = document.getElementById('result');
-        const historyDiv = document.getElementById('history');
-        const statusDiv = document.getElementById('status');
-        const debugInfo = document.getElementById('debugInfo');
-        const debugContainer = document.getElementById('debugContainer');
-        const confidenceFill = document.getElementById('confidenceFill');
-        
-        let scanInterval;
-        let history = [];
-        let lastScanned = '';
-        let lastScanTime = 0;
-        let isScanning = false;
-        let debugMode = false;
-        let videoTrack = null;
-        let torchEnabled = false;
-        let recentScans = []; // สำหรับ voting
-
-        // Code 39 character encoding (9 bars: 5 black, 4 white)
-        // Pattern: BWBWBWBWB where B=black, W=white, 1=wide, 0=narrow
-        const code39Patterns = {
-            '0': '000110100', '1': '100100001', '2': '001100001',
-            '3': '101100000', '4': '000110001', '5': '100110000',
-            '6': '001110000', '7': '000100101', '8': '100100100',
-            '9': '001100100', 'A': '100001001', 'B': '001001001',
-            'C': '101001000', 'D': '000011001', 'E': '100011000',
-            'F': '001011000', 'G': '000001101', 'H': '100001100',
-            'I': '001001100', 'J': '000011100', 'K': '100000011',
-            'L': '001000011', 'M': '101000010', 'N': '000010011',
-            'O': '100010010', 'P': '001010010', 'Q': '000000111',
-            'R': '100000110', 'S': '001000110', 'T': '000010110',
-            'U': '110000001', 'V': '011000001', 'W': '111000000',
-            'X': '010010001', 'Y': '110010000', 'Z': '011010000',
-            '-': '010000101', '.': '110000100', ' ': '011000100',
-            '*': '010010100' // Start/Stop
-        };
-
-        // สร้าง reverse map
-        const patternToChar = {};
-        for (const [char, pattern] of Object.entries(code39Patterns)) {
-            patternToChar[pattern] = char;
-        }
-
-        function log(message) {
-            console.log(message);
-            if (debugMode) {
-                const timestamp = new Date().toLocaleTimeString('th-TH');
-                const lines = debugInfo.textContent.split('\n');
-                if (lines.length > 50) lines.length = 50;
-                debugInfo.textContent = `[${timestamp}] ${message}\n${lines.join('\n')}`;
-            }
-        }
-
-        function toggleDebug() {
-            debugMode = !debugMode;
-            debugContainer.style.display = debugMode ? 'block' : 'none';
-            if (debugMode) {
-                debugContainer.classList.add('show-canvas');
-                log('เปิด Debug Mode');
-            } else {
-                debugContainer.classList.remove('show-canvas');
-            }
-        }
-
-        async function startCamera() {
-            try {
-                log('กำลังเปิดกล้อง...');
-                
-                const constraints = [
-                    { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-                    { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-                    { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
-                    { facingMode: 'environment' }
-                ];
-                
-                let stream = null;
-                for (const constraint of constraints) {
-                    try {
-                        stream = await navigator.mediaDevices.getUserMedia({ video: constraint });
-                        log(`ใช้ความละเอียด: ${JSON.stringify(constraint)}`);
-                        break;
-                    } catch (e) {
-                        continue;
-                    }
-                }
-                
-                if (!stream) {
-                    throw new Error('ไม่สามารถเปิดกล้องได้');
-                }
-                
-                video.srcObject = stream;
-                videoTrack = stream.getVideoTracks()[0];
-                
-                if (videoTrack.getCapabilities) {
-                    const caps = videoTrack.getCapabilities();
-                    if (caps.torch) {
-                        document.getElementById('torchBtn').style.display = 'inline-block';
-                        log('รองรับไฟฉาย');
-                    }
-                }
-                
-                video.onloadedmetadata = () => {
-                    video.play();
-                    log(`กล้องเปิดสำเร็จ: ${video.videoWidth}x${video.videoHeight}`);
-                    startScanning();
-                    updateStatus('กำลังสแกน...', 'scanning');
-                };
-            } catch (err) {
-                log('Error: ' + err.message);
-                alert('ไม่สามารถเข้าถึงกล้องได้: ' + err.message);
-            }
-        }
-
-        function toggleTorch() {
-            if (!videoTrack) return;
-            
-            torchEnabled = !torchEnabled;
-            const torchBtn = document.getElementById('torchBtn');
-            
-            videoTrack.applyConstraints({
-                advanced: [{ torch: torchEnabled }]
-            }).then(() => {
-                if (torchEnabled) {
-                    torchBtn.textContent = '💡 ปิดไฟ';
-                    torchBtn.className = 'btn torch-btn torch-on';
-                    log('เปิดไฟฉาย');
-                } else {
-                    torchBtn.textContent = '💡 ไฟฉาย';
-                    torchBtn.className = 'btn torch-btn';
-                    log('ปิดไฟฉาย');
-                }
-            }).catch(err => {
-                log('ไม่สามารถควบคุมไฟฉาย: ' + err.message);
-            });
-        }
-
-        function updateStatus(text, type) {
-            statusDiv.textContent = text;
-            statusDiv.className = 'status-badge status-' + type;
-        }
-
-        function startScanning() {
-            if (isScanning) return;
-            isScanning = true;
-            log('เริ่มสแกน...');
-            
-            let scanCount = 0;
-            scanInterval = setInterval(() => {
-                if (video.readyState === 4) {
-                    scanCount++;
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0);
-                    
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const results = scanBarcodeMultiThreshold(imageData);
-                    
-                    if (scanCount % 10 === 0) {
-                        log(`Scanning... (${scanCount} attempts, ${recentScans.length} in buffer)`);
-                    }
-                    
-                    if (results.length > 0) {
-                        processResults(results);
-                    }
-                }
-            }, 150);
-        }
-
-        function processResults(results) {
-            // เพิ่มผลลัพธ์ใหม่เข้า buffer
-            const now = Date.now();
-            recentScans.push({ results, time: now });
-            
-            // ลบข้อมูลเก่าที่เกิน 1 วินาที
-            recentScans = recentScans.filter(s => now - s.time < 1000);
-            
-            // นับคะแนนแต่ละผลลัพธ์
-            const votes = {};
-            for (const scan of recentScans) {
-                for (const result of scan.results) {
-                    if (!votes[result]) votes[result] = 0;
-                    votes[result]++;
-                }
-            }
-            
-            // หาผลลัพธ์ที่ได้คะแนนสูงสุด
-            let maxVotes = 0;
-            let winner = null;
-            for (const [result, count] of Object.entries(votes)) {
-                if (count > maxVotes) {
-                    maxVotes = count;
-                    winner = result;
-                }
-            }
-            
-            // ต้องได้อย่างน้อย 3 คะแนนจึงจะยอมรับ
-            if (winner && maxVotes >= 3) {
-                const confidence = Math.min(100, (maxVotes / recentScans.length) * 100);
-                confidenceFill.style.width = confidence + '%';
-                
-                if (winner !== lastScanned || now - lastScanTime > 2000) {
-                    handleScanSuccess(winner, confidence);
-                    lastScanTime = now;
-                    recentScans = []; // ล้าง buffer
-                }
-            }
-        }
-
-        function scanBarcodeMultiThreshold(imageData) {
-            const width = imageData.width;
-            const height = imageData.height;
-            const data = imageData.data;
-            const allResults = [];
-            
-            // สแกนหลายบรรทัด
-            const scanLines = [
-                Math.floor(height * 0.50),
-                Math.floor(height * 0.45),
-                Math.floor(height * 0.55),
-                Math.floor(height * 0.40),
-                Math.floor(height * 0.60)
-            ];
-            
-            for (const scanY of scanLines) {
-                const pixels = [];
-                
-                // อ่านค่า brightness
-                for (let x = 0; x < width; x++) {
-                    const idx = (scanY * width + x) * 4;
-                    const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-                    pixels.push(brightness);
-                }
-                
-                // ลองหลาย threshold
-                const avgBrightness = pixels.reduce((a, b) => a + b, 0) / pixels.length;
-                const thresholds = [
-                    avgBrightness * 0.7,
-                    avgBrightness * 0.8,
-                    avgBrightness * 0.9,
-                    calculateOtsuThreshold(pixels)
-                ];
-                
-                for (const threshold of thresholds) {
-                    if (debugMode && scanY === scanLines[0] && threshold === thresholds[0]) {
-                        drawDebugLine(pixels, threshold);
-                    }
-                    
-                    const bars = pixelsToBars(pixels, threshold);
-                    
-                    if (bars.length >= 20) {
-                        const decoded = decodeCode39Strict(bars);
-                        if (decoded && decoded.length >= 1) {
-                            allResults.push(decoded);
-                            if (debugMode) {
-                                log(`✓ ถอดรหัสได้: ${decoded} (threshold: ${threshold.toFixed(1)})`);
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return allResults;
-        }
-
-        function pixelsToBars(pixels, threshold) {
-            const bars = [];
-            let lastValue = pixels[0] > threshold ? 1 : 0;
-            let count = 1;
-            
-            for (let x = 1; x < pixels.length; x++) {
-                const currentValue = pixels[x] > threshold ? 1 : 0;
-                
-                if (currentValue === lastValue) {
-                    count++;
-                } else {
-                    if (count >= 1) {
-                        bars.push({ value: lastValue, width: count });
-                    }
-                    lastValue = currentValue;
-                    count = 1;
-                }
-            }
-            
-            if (count >= 1) {
-                bars.push({ value: lastValue, width: count });
-            }
-            
-            return bars;
-        }
-
-        function calculateOtsuThreshold(pixels) {
-            const histogram = new Array(256).fill(0);
-            pixels.forEach(p => histogram[Math.floor(p)]++);
-            
-            const total = pixels.length;
-            let sum = 0;
-            for (let i = 0; i < 256; i++) {
-                sum += i * histogram[i];
-            }
-            
-            let sumB = 0;
-            let wB = 0;
-            let maxVariance = 0;
-            let threshold = 0;
-            
-            for (let t = 0; t < 256; t++) {
-                wB += histogram[t];
-                if (wB === 0) continue;
-                
-                const wF = total - wB;
-                if (wF === 0) break;
-                
-                sumB += t * histogram[t];
-                
-                const mB = sumB / wB;
-                const mF = (sum - sumB) / wF;
-                
-                const variance = wB * wF * (mB - mF) * (mB - mF);
-                
-                if (variance > maxVariance) {
-                    maxVariance = variance;
-                    threshold = t;
-                }
-            }
-            
-            return threshold;
-        }
-
-        function drawDebugLine(pixels, threshold) {
-            const dw = debugCanvas.width;
-            const dh = debugCanvas.height;
-            
-            debugCtx.fillStyle = '#f0f0f0';
-            debugCtx.fillRect(0, 0, dw, dh);
-            
-            const step = pixels.length / dw;
-            
-            debugCtx.strokeStyle = '#333';
-            debugCtx.beginPath();
-            for (let x = 0; x < dw; x++) {
-                const idx = Math.floor(x * step);
-                const brightness = pixels[idx];
-                const y = dh - (brightness / 255) * dh;
-                if (x === 0) {
-                    debugCtx.moveTo(x, y);
-                } else {
-                    debugCtx.lineTo(x, y);
-                }
-            }
-            debugCtx.stroke();
-            
-            const thresholdY = dh - (threshold / 255) * dh;
-            debugCtx.strokeStyle = '#ff0000';
-            debugCtx.setLineDash([5, 5]);
-            debugCtx.beginPath();
-            debugCtx.moveTo(0, thresholdY);
-            debugCtx.lineTo(dw, thresholdY);
-            debugCtx.stroke();
-            debugCtx.setLineDash([]);
-            
-            debugCtx.fillStyle = '#000';
-            for (let x = 0; x < dw; x++) {
-                const idx = Math.floor(x * step);
-                if (pixels[idx] < threshold) {
-                    debugCtx.fillRect(x, dh - 10, 1, 10);
-                }
-            }
-        }
-
-      function decodeCode39Strict(bars) {
-            if (bars.length < 20) return null;
-            
-            // คำนวณความกว้างเฉลี่ยของแต่ละประเภท bar
-            const widths = bars.map(b => b.width).sort((a, b) => a - b);
-            
-            // ใช้ k-means แบบง่ายแยก narrow และ wide
-            let narrowSum = 0, narrowCount = 0;
-            let wideSum = 0, wideCount = 0;
-            
-            const midpoint = widths[Math.floor(widths.length / 2)];
-            
-            for (const w of widths) {
-                if (w < midpoint) {
-                    narrowSum += w;
-                    narrowCount++;
-                } else {
-                    wideSum += w;
-                    wideCount++;
-                }
-            }
-            
-            if (narrowCount === 0 || wideCount === 0) return null;
-            
-            const narrowAvg = narrowSum / narrowCount;
-            const wideAvg = wideSum / wideCount;
-            const ratio = wideAvg / narrowAvg;
-            
-            // Code 39 ต้องมี ratio 2:1 ถึง 3:1 แต่ผ่อนปรนให้สแกนง่ายขึ้น
-            if (ratio < 1.5 || ratio > 4.0) {
-                if (debugMode) {
-                    log(`✗ Ratio ผิด: ${ratio.toFixed(2)}`);
-                }
-                return null;
-            }
-            
-            const threshold = (narrowAvg + wideAvg) / 2;
-            
-            // แปลงเป็น pattern (0=narrow, 1=wide)
-            const patterns = [];
-            for (let i = 0; i < bars.length - 8; i++) {
-                const segment = bars.slice(i, i + 9);
-                const pattern = segment.map(b => b.width >= threshold ? '1' : '0').join('');
-                const char = patternToChar[pattern];
-                
-                if (char) {
-                    patterns.push({ pattern, char, index: i });
-                }
-            }
-            
-            if (patterns.length === 0) return null;
-            
-            // ค้นหา start marker (*)
-            let startIndex = -1;
-            for (let i = 0; i < patterns.length; i++) {
-                if (patterns[i].char === '*') {
-                    startIndex = i;
-                    break;
-                }
-            }
-            
-            if (startIndex === -1) {
-                if (debugMode) {
-                    log('✗ ไม่พบ START marker');
-                }
-                return null;
-            }
-            
-            // ถอดรหัสตัวอักษร
-            let decoded = '';
-            let i = startIndex + 1;
-            
-            while (i < patterns.length) {
-                const char = patterns[i].char;
-                
-                if (!char) {
-                    i++;
-                    continue;
-                }
-                
-                if (char === '*') {
-                    // พบ STOP marker
-                    if (decoded.length > 0) {
-                        if (debugMode) {
-                            log(`✓ ถอดรหัสดิบ: ${decoded}`);
-                        }
-                        return decoded;
-                    }
-                    break;
-                }
-                
-                decoded += char;
-                i++;
-                
-                // ป้องกันถอดรหัสยาวเกินไป
-                if (decoded.length > 50) {
-                    break;
-                }
-            }
-            
-            // ถ้าถอดรหัสได้แต่ไม่มี STOP marker ก็ยอมรับถ้ามีอย่างน้อย 3 ตัว
-            if (decoded.length >= 3) {
-                if (debugMode) {
-                    log(`⚠ ถอดรหัสดิบ (ไม่มี STOP): ${decoded}`);
-                }
-                return decoded;
-            }
-            
-            return null;
-        }
-
-        function handleScanSuccess(data, confidence) {
-            lastScanned = data;
-            
-            resultDiv.innerHTML = data + '<span class="cursor-blink"></span>';
-            
-            const now = new Date();
-            const time = now.toLocaleTimeString('th-TH');
-            history.unshift({ data, time, confidence: confidence.toFixed(0) + '%' });
-            if (history.length > 10) history.pop();
-            updateHistory();
-            
-            showSuccess();
-            sendData(data);
-            log(`✅ สแกนสำเร็จ: ${data} (confidence: ${confidence.toFixed(0)}%)`);
-            
-            if (navigator.vibrate) {
-                navigator.vibrate(200);
-            }
-        }
-
-        function sendData(data) {
-            console.log('ส่งข้อมูล:', data);
-            // เพิ่มโค้ดส่งข้อมูลที่นี่
-        }
-
-        function showSuccess() {
-            const indicator = document.createElement('div');
-            indicator.className = 'success-indicator success-show';
-            indicator.textContent = '✓ สแกนสำเร็จ';
-            document.body.appendChild(indicator);
-            
-            setTimeout(() => {
-                indicator.remove();
-            }, 800);
-        }
-
-        function updateHistory() {
-            if (history.length === 0) {
-                historyDiv.innerHTML = '<div class="empty-history">ยังไม่มีประวัติการสแกน</div>';
-                return;
-            }
-            
-            historyDiv.innerHTML = history.map(item => `
-                <div class="history-item">
-                    <div class="history-data">${item.data}</div>
-                    <div class="history-time">⏰ ${item.time} | 📊 ${item.confidence}</div>
-                </div>
-            `).join('');
-        }
-
-        function clearHistory() {
-            history = [];
-            lastScanned = '';
-            recentScans = [];
-            updateHistory();
-            log('ล้างประวัติ');
-        }
-
-        window.addEventListener('load', () => {
-            updateHistory();
-            startCamera();
-        });
-    </script>
+  // ==============================
+  // 🔒 กัน reload / ปิด tab (เสริม)
+  // ==============================
+  window.addEventListener('beforeunload', function (e) {
+    e.preventDefault();
+    e.returnValue = '';
+  });
+</script>
 </body>
 </html>
